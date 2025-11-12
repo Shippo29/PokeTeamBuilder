@@ -6,58 +6,71 @@
     android:orientation="vertical"
     android:padding="16dp"
     android:background="@drawable/bg_poke_pattern">
-    android:background="@drawable/bg_poke_pattern">
 
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Pokédex"
-        android:textSize="22sp"
-        android:textStyle="bold"
-        android:paddingBottom="8dp" />
-
-    <!-- Filtros desplegables -->
-    <com.google.android.material.button.MaterialButton
-        android:id="@+id/btn_filters_toggle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Filtros"
-        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-        android:layout_marginBottom="8dp" />
-
-    <LinearLayout
-        android:id="@+id/filters_panel"
+    <!-- Barra de búsqueda con icono y panel desplegable de filtros integrado -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/search_container"
+        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:visibility="gone">
+        android:layout_marginBottom="8dp"
+        app:startIconDrawable="@android:drawable/ic_menu_search">
 
-        <HorizontalScrollView
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/et_search"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fillViewport="true"
-            android:paddingBottom="8dp">
+            android:hint="Buscar Pokémon por nombre"
+            android:imeOptions="actionSearch"
+            android:inputType="text" />
 
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:id="@+id/gen_chips_container" />
-        </HorizontalScrollView>
+    </com.google.android.material.textfield.TextInputLayout>
 
-        <HorizontalScrollView
+    <!-- Contenedor desplegable que mostrará los filtros cuando el usuario enfoque la búsqueda -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/search_dropdown"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        app:cardElevation="4dp"
+        app:cardCornerRadius="8dp"
+        android:layout_marginBottom="8dp">
+
+        <LinearLayout
+            android:id="@+id/filters_panel"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
-            android:paddingBottom="8dp">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
 
-            <LinearLayout
-                android:layout_width="wrap_content"
+            <HorizontalScrollView
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:id="@+id/type_chips_container" />
-        </HorizontalScrollView>
+                android:fillViewport="true"
+                android:paddingBottom="8dp">
 
-    </LinearLayout>
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:id="@+id/gen_chips_container" />
+            </HorizontalScrollView>
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:paddingBottom="8dp">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal"
+                    android:id="@+id/type_chips_container" />
+            </HorizontalScrollView>
+
+        </LinearLayout>
+
+    </androidx.cardview.widget.CardView>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rv_pokedex"

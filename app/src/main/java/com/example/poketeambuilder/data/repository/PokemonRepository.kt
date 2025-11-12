@@ -17,6 +17,8 @@ class PokemonRepository {
 
     // Caché en memoria para evitar reconsultas repetidas mientras la app corre
     private val memoryCache = mutableMapOf<Int, PokemonUiModel>()
+    // Caché de nombres completos (para búsqueda parcial sin descargar todos los detalles)
+    private var allNamesCache: List<String>? = null
 
     // Funciones públicas básicas
     suspend fun getTypes(): List<String> {
@@ -140,6 +142,34 @@ class PokemonRepository {
             }
         }
         return acc.distinctBy { it.id }.sortedBy { it.id }
+    }
+
+    // Buscar por fragmento de nombre (case-insensitive). Strategy:
+    // 1. Obtener lista de nombres (cacheada). 2. Filtrar nombres que contienen la query.
+    // 3. Recuperar detalles sólo de los nombres coincidentes (concurrencia limitada).
+    suspend fun searchPokemonByNamePartial(query: String, maxResults: Int = 100): List<PokemonUiModel> = coroutineScope {
+        // Obtener lista de todos los nombres (si no se tiene, pedir con un limit grande)
+        val names = allNamesCache ?: run {
+            val resp = api.listPokemon(2000, 0)
+            val list = resp.results.map { it.name }
+            allNamesCache = list
+            list
+        }
+
+        val matched = names.filter { it.contains(query, ignoreCase = true) }.take(maxResults)
+        val semaphore = Semaphore(8)
+        val deferred = matched.map { name ->
+            async {
+                semaphore.withPermit {
+                    try {
+                        getPokemonCached(name)
+                    } catch (e: Exception) {
+                        null
+                    }
+                }
+            }
+        }
+        deferred.mapNotNull { it.await() }.sortedBy { it.id }
     }
 }
 

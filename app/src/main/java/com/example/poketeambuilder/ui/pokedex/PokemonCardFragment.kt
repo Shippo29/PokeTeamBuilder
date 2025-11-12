@@ -63,11 +63,7 @@ class PokemonCardFragment : Fragment() {
                         text = TypeColorMap.displayNameSpanish(t)
                         setPadding(12,6,12,6)
                         setTextColor(textColor)
-                        val bg = android.graphics.drawable.GradientDrawable().apply {
-                            cornerRadius = resources.displayMetrics.density * 16
-                            setColor(color)
-                        }
-                        background = bg
+                        background = ChipUtils.createPillDrawable(requireContext(), color, 16f)
                         val lp = LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT)
                         lp.setMargins(0,0,8,0)
                         layoutParams = lp
