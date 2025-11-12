@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tv_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Seleccionar equipo"
+        android:textStyle="bold"
+        android:textSize="18sp"
+        android:paddingBottom="8dp" />
+
+    <LinearLayout
+        android:id="@+id/teams_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <TextView
+        android:id="@+id/tv_no_teams"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="No hay equipos creados"
+        android:visibility="gone"
+        android:paddingTop="8dp"
+        android:paddingBottom="8dp" />
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_create_team"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:text="Crear equipo" />
+
+</LinearLayout>

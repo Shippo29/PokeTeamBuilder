@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- Base gradient: deep blue theme that keeps good contrast with cards/text -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#0D47A1"
+                android:endColor="#1976D2"
+                android:angle="270" />
+        </shape>
+    </item>
+
+    <!-- Large, subtle Pokéball silhouette centered -> low alpha so it doesn't affect legibility -->
+    <item
+        android:drawable="@drawable/ic_pokeball_logo"
+        android:gravity="center"
+        android:alpha="0.06" />
+
+    <!-- Secondary accent Pokéball at bottom-left to add depth -->
+    <item
+        android:drawable="@drawable/ic_pokeball_logo"
+        android:gravity="bottom|left"
+        android:alpha="0.03" />
+
+</layer-list>

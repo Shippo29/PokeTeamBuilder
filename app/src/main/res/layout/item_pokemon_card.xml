@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="90dp"
+    android:layout_marginBottom="8dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="4dp">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="8dp">
+
+        <ImageView
+            android:id="@+id/iv_sprite"
+            android:layout_width="72dp"
+            android:layout_height="72dp"
+            android:layout_centerVertical="true"
+            android:scaleType="centerInside"
+            android:contentDescription="Sprite" />
+
+        <TextView
+            android:id="@+id/tv_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/iv_sprite"
+            android:layout_marginStart="12dp"
+            android:textStyle="bold"
+            android:textSize="16sp"
+            android:layout_alignParentTop="true" />
+
+        <TextView
+            android:id="@+id/tv_number"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignBaseline="@id/tv_name"
+            android:layout_toStartOf="@id/btn_add_team"
+            android:textSize="14sp" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_add_team"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"
+            android:text="Añadir al equipo"
+            style="@style/Widget.MaterialComponents.Button" />
+
+        <LinearLayout
+            android:id="@+id/types_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@id/iv_sprite"
+            android:layout_marginStart="12dp"
+            android:layout_below="@id/tv_name"
+            android:orientation="horizontal" />
+
+    </RelativeLayout>
+
+</androidx.cardview.widget.CardView>

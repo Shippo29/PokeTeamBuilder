@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <!-- Pokémon-inspired palette -->
+    <color name="pokedex_red">#D32F2F</color>
+    <color name="pokedex_orange">#F57C00</color>
+    <color name="pokedex_yellow">#FBC02D</color>
+    <color name="pokedex_bg">#FFF8E1</color>
+    <color name="card_surface">#FFFFFFFF</color>
+    <color name="muted_text">#FF616161</color>
+</resources>
