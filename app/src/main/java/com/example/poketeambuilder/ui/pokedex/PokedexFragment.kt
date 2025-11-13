@@ -23,6 +23,7 @@ class PokedexFragment : Fragment() {
 
     private val vm: PokedexViewModel by viewModels()
     private lateinit var adapter: PokedexAdapter
+    private lateinit var genContainer: LinearLayout
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -53,8 +54,8 @@ class PokedexFragment : Fragment() {
 
         val rv = view.findViewById<RecyclerView>(R.id.rv_pokedex)
         val prog = view.findViewById<View>(R.id.progress)
-        val genContainer = view.findViewById<LinearLayout>(R.id.gen_chips_container)
-        val typeContainer = view.findViewById<LinearLayout>(R.id.type_chips_container)
+        genContainer = view.findViewById<LinearLayout>(R.id.genContainer)
+        val typeContainer = view.findViewById<LinearLayout>(R.id.typeContainer)
 
         adapter = PokedexAdapter(onClick = { /* no-op: don't open detail */ }, onAddToTeam = { pokemonId ->
             // Open bottom sheet to select team for this pokemon ID (only ID passed)
@@ -94,9 +95,18 @@ class PokedexFragment : Fragment() {
 
         // generation chips 1..8
         for (i in 1..8) {
-            genContainer.addView(makeChip("Gen $i", bgRes = R.drawable.pill_background, textColor = requireContext().getColor(R.color.white)) {
+            val chip = makeChip("Gen $i", bgRes = R.drawable.pill_background, textColor = requireContext().getColor(R.color.white)) {
                 vm.setGeneration(i)
-            })
+            }
+            chip.tag = i
+            genContainer.addView(chip)
+        }
+
+        // Observa cambios de generación seleccionada y actualiza UI
+        lifecycleScope.launch {
+            vm.currentGenerationFlow.collectLatest { gen ->
+                updateGenChipSelection(gen)
+            }
         }
 
         // types will be populated from ViewModel
@@ -104,19 +114,70 @@ class PokedexFragment : Fragment() {
             vm.types.collectLatest { types ->
                 typeContainer.removeAllViews()
                 // add an "All" chip
-                typeContainer.addView(makeChip("Todos", bgColor = android.graphics.Color.parseColor("#EEEEEE"), textColor = requireContext().getColor(android.R.color.black)) {
-                    vm.setTypeFilter(null)
-                })
+                // "Todos" — limpia los filtros de tipos
+                val allChip = makeChip("Todos", bgColor = android.graphics.Color.parseColor("#EEEEEE"), textColor = requireContext().getColor(android.R.color.black)) {
+                    vm.clearTypeFilters()
+                }
+                allChip.tag = "todos"
+                typeContainer.addView(allChip)
 
+                // Crear chips por tipo y añadir listener que alterna selección (máx 2)
                 types.forEach { t ->
                     val color = com.example.poketeambuilder.ui.pokedex.TypeColorMap.colorForType(t)
                     val textColor = com.example.poketeambuilder.ui.pokedex.TypeColorMap.textColorForType(t)
-                    typeContainer.addView(makeChip(com.example.poketeambuilder.ui.pokedex.TypeColorMap.displayNameSpanish(t), bgColor = color, textColor = textColor) {
-                        vm.setTypeFilter(t)
-                    })
+                    val chip = makeChip(com.example.poketeambuilder.ui.pokedex.TypeColorMap.displayNameSpanish(t), bgColor = color, textColor = textColor) {
+                        vm.toggleTypeFilter(t)
+                    }
+                    // tag: clave en minúsculas para búsqueda rápida
+                    chip.tag = t.lowercase()
+                    typeContainer.addView(chip)
                 }
             }
         }
+
+        // Observa selección de tipos para actualizar estilos de chips (centralizado)
+        lifecycleScope.launch {
+            vm.selectedTypesFlow.collectLatest { selected ->
+                val normalized = selected.map { it.lowercase() }
+                val childCount = typeContainer.childCount
+                for (i in 0 until childCount) {
+                    val child = typeContainer.getChildAt(i) as? TextView ?: continue
+                    val tag = (child.tag as? String) ?: continue
+                    val isSelected = if (tag == "todos") normalized.isEmpty() else normalized.contains(tag)
+                    applyTypeStyle(child, isSelected, tag)
+                }
+            }
+        }
+    }
+
+    private fun updateGenChipSelection(selectedGen: Int) {
+        val count = genContainer.childCount
+        for (i in 0 until count) {
+            val child = genContainer.getChildAt(i)
+            val gen = child.tag as? Int ?: continue
+            val isSelected = gen == selectedGen
+            applyGenStyle(child as TextView, isSelected)
+        }
+    }
+
+    private fun applyGenStyle(tv: TextView, selected: Boolean) {
+        if (selected) {
+            // Estilo activo: fondo intenso, texto blanco y prefijo check
+            tv.setTextColor(requireContext().getColor(android.R.color.white))
+            tv.background = ChipUtils.createPillDrawable(requireContext(), requireContext().getColor(R.color.pokedex_red), 12f)
+            val base = tv.text.toString().replaceFirst("^✔\\s+".toRegex(), "")
+            tv.text = "✔ $base"
+            tv.setPadding(20)
+        } else {
+            // Estilo normal: usar recurso base y texto por defecto
+            val base = tv.text.toString().replaceFirst("^✔\\s+".toRegex(), "")
+            tv.text = base
+            tv.setTextColor(requireContext().getColor(R.color.white))
+            tv.setBackgroundResource(R.drawable.pill_background)
+            tv.setPadding(20)
+        }
+        // Opcional: pequeña animación de re-paint
+        tv.animate().setDuration(120).alpha(1f)
     }
 
     // Helper para crear un chip estilizado y consistente
@@ -138,4 +199,29 @@ class PokedexFragment : Fragment() {
         }
         return chip
     }
+
+    private fun applyTypeStyle(tv: TextView, selected: Boolean, typeTag: String) {
+        if (selected) {
+            tv.setTextColor(requireContext().getColor(android.R.color.white))
+            tv.background = ChipUtils.createPillDrawable(requireContext(), requireContext().getColor(R.color.pokedex_red), 12f)
+            val base = tv.text.toString().replaceFirst("^✔\\s+".toRegex(), "")
+            tv.text = "✔ $base"
+            tv.setPadding(20)
+        } else {
+            val base = tv.text.toString().replaceFirst("^✔\\s+".toRegex(), "")
+            tv.text = base
+            tv.setTextColor(requireContext().getColor(R.color.white))
+            if (typeTag == "todos") {
+                tv.background = ChipUtils.createPillDrawable(requireContext(), android.graphics.Color.parseColor("#EEEEEE"), 12f)
+                tv.setTextColor(requireContext().getColor(android.R.color.black))
+            } else {
+                val color = com.example.poketeambuilder.ui.pokedex.TypeColorMap.colorForType(typeTag)
+                tv.background = ChipUtils.createPillDrawable(requireContext(), color, 12f)
+                val textColor = com.example.poketeambuilder.ui.pokedex.TypeColorMap.textColorForType(typeTag)
+                tv.setTextColor(textColor)
+            }
+            tv.setPadding(20)
+        }
+    }
 }
+

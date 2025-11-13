@@ -24,7 +24,11 @@ class PokedexViewModel : ViewModel() {
     val searchQuery: StateFlow<String> = _searchQuery
 
     private var currentGeneration = 1
-    private var currentTypeFilter: String? = null
+    private val _currentGeneration = MutableStateFlow(1)
+    val currentGenerationFlow: StateFlow<Int> = _currentGeneration
+    private val _selectedTypes = kotlinx.coroutines.flow.MutableStateFlow<List<String>>(emptyList())
+    val selectedTypesFlow: kotlinx.coroutines.flow.StateFlow<List<String>> = _selectedTypes
+
     private var currentOffset = 0
     private val pageSize = PokemonRepository.PAGE_SIZE
     private var endReached = false
@@ -53,7 +57,7 @@ class PokedexViewModel : ViewModel() {
     fun loadTypes() {
         viewModelScope.launch {
             try {
-                val t = repo.getTypes()
+                val t = repo.getTypes().filter { !it.equals("stellar", ignoreCase = true) && !it.equals("unknown", ignoreCase = true) }
                 _types.value = t
             } catch (e: Exception) {
                 // ignorar error
@@ -69,8 +73,8 @@ class PokedexViewModel : ViewModel() {
     }
 
     fun loadNextPage() {
-        // si hay filtro de generación activo o hay búsqueda, saltar la carga paginada
-        if (currentTypeFilter != null) return
+        // si hay filtro de tipos activo, o hay búsqueda, saltar la carga paginada
+        if (_selectedTypes.value.isNotEmpty()) return
         if (_searchQuery.value.isNotBlank()) return
         if (endReached) return
         viewModelScope.launch {
@@ -97,18 +101,24 @@ class PokedexViewModel : ViewModel() {
     fun searchQueryChanged(q: String) {
         val qTrim = q.trim().lowercase()
         _searchQuery.value = qTrim
-        if (qTrim.isEmpty()) {
-            // volver al listado paginado
+        if (qTrim.isEmpty() && _selectedTypes.value.isEmpty()) {
+            // Si no hay búsqueda ni tipos seleccionados, volver al listado paginado
             loadFirstPage()
             return
         }
 
-        // Ejecutar búsqueda parcial: delegar al repositorio para buscar nombres y traer detalles limitados
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val results = repo.searchPokemonByNamePartial(qTrim, maxResults = 120)
-                // aplicar filtros adicionales de tipo/generación
+                // Buscar por nombre si hay query, o si no hay query pero hay tipos seleccionados, cargar generación completa
+                val results = if (qTrim.isNotEmpty()) {
+                    repo.searchPokemonByNamePartial(qTrim, maxResults = 120)
+                } else if (_selectedTypes.value.isNotEmpty()) {
+                    // Si hay tipos pero no hay búsqueda, cargar generación actual y aplicar filtros de tipo
+                    repo.loadPokemonForGeneration(currentGeneration)
+                } else {
+                    emptyList()
+                }
                 _pokemonList.value = applyFilters(results)
             } catch (e: Exception) {
                 // en fallo, no romper UI
@@ -120,6 +130,7 @@ class PokedexViewModel : ViewModel() {
 
     fun loadGeneration(genId: Int) {
         currentGeneration = genId
+        _currentGeneration.value = genId
         viewModelScope.launch {
             _isLoading.value = true
             try {
@@ -136,21 +147,55 @@ class PokedexViewModel : ViewModel() {
         }
     }
 
-    fun setTypeFilter(type: String?) {
-        currentTypeFilter = type
-        // Si aplica un filtro por tipo, se filtran los ítems ya cargados.
-        // Para filtrar todo el catálogo habría que recargar todas las páginas o hacerlo en servidor.
-        _pokemonList.value = applyFilters(_pokemonList.value)
+    /**
+     * Alterna la selección de un tipo en la lista de filtros.
+     * Sólo permite hasta 2 tipos simultáneamente.
+     */
+    fun toggleTypeFilter(type: String) {
+        val current = _selectedTypes.value.toMutableList()
+        val key = type.lowercase()
+        if (current.contains(key)) {
+            current.remove(key)
+            _selectedTypes.value = current
+        } else {
+            // si ya hay 2, no añadir más
+            if (current.size >= 2) return
+            current.add(key)
+            _selectedTypes.value = current
+        }
+        // Re-ejecutar búsqueda/filtrado con los nuevos tipos
+        if (_searchQuery.value.isNotEmpty()) {
+            searchQueryChanged(_searchQuery.value)
+        } else {
+            // Si no hay búsqueda, cargar generación actual con nuevo filtro de tipos
+            loadGeneration(currentGeneration)
+        }
+    }
+
+    fun clearTypeFilters() {
+        _selectedTypes.value = emptyList()
+        if (_searchQuery.value.isEmpty()) {
+            loadFirstPage()
+        } else {
+            searchQueryChanged(_searchQuery.value)
+        }
     }
 
     fun setGeneration(gen: Int) {
         loadGeneration(gen)
+        _currentGeneration.value = gen
     }
 
     private fun applyFilters(input: List<com.example.poketeambuilder.data.repository.PokemonUiModel>): List<com.example.poketeambuilder.data.repository.PokemonUiModel> {
         var out = input
-        currentTypeFilter?.let { t ->
-            if (t.isNotEmpty()) out = out.filter { it.types.contains(t.lowercase()) }
+        // Filtrar por tipos seleccionados (si los hay)
+        if (_selectedTypes.value.isNotEmpty()) {
+            val selected = _selectedTypes.value.map { it.lowercase() }
+            out = out.filter { model ->
+                val modelTypes = model.types.map { it.lowercase() }
+                // El Pokémon debe contener todos los tipos seleccionados
+                selected.all { sel -> modelTypes.contains(sel) }
+            }
         }
         return out
     }

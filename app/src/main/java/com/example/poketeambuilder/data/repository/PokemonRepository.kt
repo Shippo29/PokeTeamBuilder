@@ -23,7 +23,7 @@ class PokemonRepository {
     // Funciones públicas básicas
     suspend fun getTypes(): List<String> {
         val resp = api.getTypes()
-        return resp.results.map { it.name }
+        return resp.results.map { it.name }.filter { !it.equals("stellar", ignoreCase = true) && !it.equals("unknown", ignoreCase = true) }
     }
 
     suspend fun getGenerationSpecies(genId: Int): List<NamedResource> {
